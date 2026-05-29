@@ -540,11 +540,9 @@ function drawBoard() {
 }
 
 function drawPieceInPanel(ctx, type, canvasW, canvasH, cellSize) {
-  ctx.clearRect(0, 0, canvasW, canvasH);
   if (!type) return;
 
   const shape = PIECES[type].shapes[0];
-  // bounding box
   let minR = 4, maxR = 0, minC = 4, maxC = 0;
   for (const [r, c] of shape) {
     minR = Math.min(minR, r); maxR = Math.max(maxR, r);
@@ -555,12 +553,6 @@ function drawPieceInPanel(ctx, type, canvasW, canvasH, cellSize) {
   const ox = Math.floor((canvasW - pw) / 2);
   const oy = Math.floor((canvasH - ph) / 2);
 
-  for (const [r, c] of shape) {
-    drawCell(ctx, r - minR, c - minC, PIECES[type].color, cellSize, PIECES[type].glow);
-  }
-  // offset translation
-  const savedTx = ctx.getTransform();
-  ctx.clearRect(0, 0, canvasW, canvasH);
   ctx.save();
   ctx.translate(ox, oy);
   for (const [r, c] of shape) {
@@ -570,6 +562,7 @@ function drawPieceInPanel(ctx, type, canvasW, canvasH, cellSize) {
 }
 
 function drawHold() {
+  hctx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
   drawPieceInPanel(hctx, held, holdCanvas.width, holdCanvas.height, PREVIEW_CELL);
 }
 
