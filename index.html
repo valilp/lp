@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tetris</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="overlay">
+      <div class="overlay-content">
+        <h1 class="game-title">TETRIS</h1>
+        <div class="controls-list">
+          <div class="ctrl-row"><span class="key">← →</span><span>Move</span></div>
+          <div class="ctrl-row"><span class="key">↑</span><span>Rotate CW</span></div>
+          <div class="ctrl-row"><span class="key">Z</span><span>Rotate CCW</span></div>
+          <div class="ctrl-row"><span class="key">↓</span><span>Soft Drop</span></div>
+          <div class="ctrl-row"><span class="key">Space</span><span>Hard Drop</span></div>
+          <div class="ctrl-row"><span class="key">C / Shift</span><span>Hold</span></div>
+          <div class="ctrl-row"><span class="key">P / Esc</span><span>Pause</span></div>
+        </div>
+        <button id="start-btn" class="btn">START</button>
+      </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameover-screen" class="overlay hidden">
+      <div class="overlay-content">
+        <h2 class="gameover-title">GAME OVER</h2>
+        <div class="final-score">
+          <div class="final-stat"><span class="label">Score</span><span id="final-score">0</span></div>
+          <div class="final-stat"><span class="label">Level</span><span id="final-level">1</span></div>
+          <div class="final-stat"><span class="label">Lines</span><span id="final-lines">0</span></div>
+        </div>
+        <button id="restart-btn" class="btn">PLAY AGAIN</button>
+      </div>
+    </div>
+
+    <!-- Pause Screen -->
+    <div id="pause-screen" class="overlay hidden">
+      <div class="overlay-content">
+        <h2 class="pause-title">PAUSED</h2>
+        <button id="resume-btn" class="btn">RESUME</button>
+      </div>
+    </div>
+
+    <!-- Game Layout -->
+    <div id="game-layout">
+      <div class="side-panel left-panel">
+        <div class="panel-box">
+          <div class="panel-label">HOLD</div>
+          <canvas id="hold-canvas" width="120" height="120"></canvas>
+        </div>
+        <div class="panel-box">
+          <div class="panel-label">SCORE</div>
+          <div id="score" class="stat-value">0</div>
+        </div>
+        <div class="panel-box">
+          <div class="panel-label">LEVEL</div>
+          <div id="level" class="stat-value">1</div>
+        </div>
+        <div class="panel-box">
+          <div class="panel-label">LINES</div>
+          <div id="lines" class="stat-value">0</div>
+        </div>
+      </div>
+
+      <div id="board-wrapper">
+        <canvas id="board-canvas" width="300" height="600"></canvas>
+      </div>
+
+      <div class="side-panel right-panel">
+        <div class="panel-box">
+          <div class="panel-label">NEXT</div>
+          <canvas id="next-canvas" width="120" height="360"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>
