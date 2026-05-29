@@ -4,14 +4,13 @@
 
 const COLS = 10;
 const ROWS = 20;
-const CELL = 30;           // pixels per cell on the board canvas
-const PREVIEW_CELL = 24;   // pixels per cell in side panels
+const CELL = 30;
+const PREVIEW_CELL = 24;
 
-// Tetromino shapes (4 rotations each, stored as [row][col] offsets from pivot)
+// Pastel kawaii piece colors
 const PIECES = {
   I: {
-    color: '#00e5ff',
-    glow:  '#00e5ff',
+    color: '#a8d8ea', dark: '#7bbcce',
     shapes: [
       [[0,0],[0,1],[0,2],[0,3]],
       [[0,2],[1,2],[2,2],[3,2]],
@@ -21,8 +20,7 @@ const PIECES = {
     spawnOffset: [-1, 3],
   },
   O: {
-    color: '#ffd600',
-    glow:  '#ffd600',
+    color: '#ffd6e0', dark: '#f0afc0',
     shapes: [
       [[0,0],[0,1],[1,0],[1,1]],
       [[0,0],[0,1],[1,0],[1,1]],
@@ -32,8 +30,7 @@ const PIECES = {
     spawnOffset: [0, 4],
   },
   T: {
-    color: '#e040fb',
-    glow:  '#e040fb',
+    color: '#d4b8e0', dark: '#b090c8',
     shapes: [
       [[0,1],[1,0],[1,1],[1,2]],
       [[0,1],[1,1],[1,2],[2,1]],
@@ -43,8 +40,7 @@ const PIECES = {
     spawnOffset: [0, 3],
   },
   S: {
-    color: '#69f0ae',
-    glow:  '#69f0ae',
+    color: '#b8e0d2', dark: '#88c4b0',
     shapes: [
       [[0,1],[0,2],[1,0],[1,1]],
       [[0,1],[1,1],[1,2],[2,2]],
@@ -54,8 +50,7 @@ const PIECES = {
     spawnOffset: [0, 3],
   },
   Z: {
-    color: '#ff5252',
-    glow:  '#ff5252',
+    color: '#ffb3c6', dark: '#e08090',
     shapes: [
       [[0,0],[0,1],[1,1],[1,2]],
       [[0,2],[1,1],[1,2],[2,1]],
@@ -65,8 +60,7 @@ const PIECES = {
     spawnOffset: [0, 3],
   },
   J: {
-    color: '#448aff',
-    glow:  '#448aff',
+    color: '#b8ccf0', dark: '#88a4d8',
     shapes: [
       [[0,0],[1,0],[1,1],[1,2]],
       [[0,1],[0,2],[1,1],[2,1]],
@@ -76,8 +70,7 @@ const PIECES = {
     spawnOffset: [0, 3],
   },
   L: {
-    color: '#ff9100',
-    glow:  '#ff9100',
+    color: '#ffd4a8', dark: '#e0ae78',
     shapes: [
       [[0,2],[1,0],[1,1],[1,2]],
       [[0,1],[1,1],[2,1],[2,2]],
@@ -90,63 +83,103 @@ const PIECES = {
 
 const PIECE_KEYS = Object.keys(PIECES);
 
-// Super Rotation System wall-kick data (J, L, S, T, Z)
 const KICKS_JLSTZ = [
-  [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]], // 0→1
-  [[0,0],[1,0],[1,-1],[0,2],[1,2]],      // 1→2
-  [[0,0],[1,0],[1,1],[0,-2],[1,-2]],     // 2→3
-  [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],  // 3→0
+  [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+  [[0,0],[1,0],[1,-1],[0,2],[1,2]],
+  [[0,0],[1,0],[1,1],[0,-2],[1,-2]],
+  [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
 ];
 
-// SRS wall-kick data for I piece
 const KICKS_I = [
-  [[0,0],[-2,0],[1,0],[-2,-1],[1,2]],   // 0→1
-  [[0,0],[-1,0],[2,0],[-1,2],[2,-1]],   // 1→2
-  [[0,0],[2,0],[-1,0],[2,1],[-1,-2]],   // 2→3
-  [[0,0],[1,0],[-2,0],[1,-2],[-2,1]],   // 3→0
+  [[0,0],[-2,0],[1,0],[-2,-1],[1,2]],
+  [[0,0],[-1,0],[2,0],[-1,2],[2,-1]],
+  [[0,0],[2,0],[-1,0],[2,1],[-1,-2]],
+  [[0,0],[1,0],[-2,0],[1,-2],[-2,1]],
 ];
 
-// Scoring table [lines cleared - 1] × level
 const LINE_SCORE = [100, 300, 500, 800];
-
-// Lock delay and other timing (ms)
 const LOCK_DELAY = 500;
 const LOCK_MOVES_MAX = 15;
 
-// Drop speed per level (ms per row)
 function dropInterval(level) {
-  // Standard Tetris speed curve (approx Guideline)
-  const t = Math.pow(0.8 - (level - 1) * 0.007, level - 1);
-  return Math.max(50, Math.round(t * 1000));
+  return Math.max(50, Math.round(Math.pow(0.8 - (level - 1) * 0.007, level - 1) * 1000));
+}
+
+// ── Particles ─────────────────────────────────────────────────────────────────
+
+let particles = [];
+
+const SPLASH_COLORS = [
+  '#ff8fab', '#ffb3c6', '#ff6b9d', '#ffc8dd',
+  '#ff85a1', '#ffffff', '#ffd6e0', '#ffccd5',
+  '#f9a8d4', '#fbb6ce', '#ff5fa0',
+];
+
+function spawnSplash(lockedCells) {
+  for (const [r, c] of lockedCells) {
+    const cx = (c + 0.5) * CELL;
+    const cy = (r + 0.5) * CELL;
+    const count = 7 + Math.floor(Math.random() * 5);
+    for (let i = 0; i < count; i++) {
+      // Spray mostly upward and sideways (hitting the ground)
+      const angle = Math.PI + (Math.random() - 0.5) * Math.PI * 1.4;
+      const speed = 1.5 + Math.random() * 3.5;
+      const life = 0.7 + Math.random() * 0.5;
+      particles.push({
+        x: cx + (Math.random() - 0.5) * CELL * 0.6,
+        y: cy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life,
+        maxLife: life,
+        size: 2.5 + Math.random() * 4,
+        color: SPLASH_COLORS[Math.floor(Math.random() * SPLASH_COLORS.length)],
+      });
+    }
+  }
+}
+
+function updateParticles(dt) {
+  const decay = dt * 0.0018;
+  for (const p of particles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.22;
+    p.life -= decay;
+  }
+  particles = particles.filter(p => p.life > 0);
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    const alpha = Math.min(1, p.life / p.maxLife);
+    bctx.globalAlpha = alpha;
+    bctx.fillStyle = p.color;
+    bctx.beginPath();
+    bctx.arc(p.x, p.y, p.size * alpha + 0.5, 0, Math.PI * 2);
+    bctx.fill();
+  }
+  bctx.globalAlpha = 1;
 }
 
 // ── State ────────────────────────────────────────────────────────────────────
 
-let board;         // 2D array [row][col] → color string or null
-let bag;           // randomizer bag
-let current;       // { type, rot, row, col }
-let next3;         // array of up to 3 upcoming piece types
-let held;          // piece type or null
-let canHold;       // bool
+let board, bag, current, next3, held, canHold;
 let score, level, lines;
 let gameRunning, paused, gameOver;
 let lockTimer, lockMoves;
-let lastTime;
-let dropAccum;
-let rafId;
-let animatingLines; // rows being cleared (for flash animation)
-let animFrame;
+let lastTime, dropAccum, rafId;
+let animatingLines, animFrame;
 
-// ── Canvas setup ─────────────────────────────────────────────────────────────
+// ── Canvas ────────────────────────────────────────────────────────────────────
 
-const boardCanvas  = document.getElementById('board-canvas');
-const holdCanvas   = document.getElementById('hold-canvas');
-const nextCanvas   = document.getElementById('next-canvas');
-const bctx  = boardCanvas.getContext('2d');
-const hctx  = holdCanvas.getContext('2d');
-const nctx  = nextCanvas.getContext('2d');
+const boardCanvas = document.getElementById('board-canvas');
+const holdCanvas  = document.getElementById('hold-canvas');
+const nextCanvas  = document.getElementById('next-canvas');
+const bctx = boardCanvas.getContext('2d');
+const hctx = holdCanvas.getContext('2d');
+const nctx = nextCanvas.getContext('2d');
 
-// Resize canvases to match constants
 boardCanvas.width  = COLS * CELL;
 boardCanvas.height = ROWS * CELL;
 holdCanvas.width   = 5 * PREVIEW_CELL;
@@ -154,7 +187,7 @@ holdCanvas.height  = 5 * PREVIEW_CELL;
 nextCanvas.width   = 5 * PREVIEW_CELL;
 nextCanvas.height  = 15 * PREVIEW_CELL;
 
-// ── Bag randomizer ────────────────────────────────────────────────────────────
+// ── Bag randomizer ─────────────────────────────────────────────────────────────
 
 function fillBag() {
   const b = [...PIECE_KEYS];
@@ -174,7 +207,7 @@ function refillNext3() {
   while (next3.length < 3) next3.push(nextFromBag());
 }
 
-// ── Piece helpers ─────────────────────────────────────────────────────────────
+// ── Piece helpers ──────────────────────────────────────────────────────────────
 
 function cells(type, rot, row, col) {
   return PIECES[type].shapes[rot].map(([dr, dc]) => [row + dr, col + dc]);
@@ -190,19 +223,14 @@ function isValid(type, rot, row, col) {
 
 function spawnPiece(type) {
   const [dr, dc] = PIECES[type].spawnOffset;
-  const rot = 0;
-  const r = dr, c = dc;
-  if (!isValid(type, rot, r, c)) {
-    triggerGameOver();
-    return false;
-  }
-  current = { type, rot, row: r, col: c };
+  if (!isValid(type, 0, dr, dc)) { triggerGameOver(); return false; }
+  current = { type, rot: 0, row: dr, col: dc };
   lockTimer = null;
   lockMoves = 0;
   return true;
 }
 
-// ── Rotation ──────────────────────────────────────────────────────────────────
+// ── Rotation ───────────────────────────────────────────────────────────────────
 
 function rotate(dir) {
   if (!current) return;
@@ -214,9 +242,8 @@ function rotate(dir) {
     : kicks[newRot].map(([kr, kc]) => [-kr, -kc]);
 
   for (const [kr, kc] of kickSet) {
-    const nr = row + kr, nc = col + kc;
-    if (isValid(type, newRot, nr, nc)) {
-      current = { type, rot: newRot, row: nr, col: nc };
+    if (isValid(type, newRot, row + kr, col + kc)) {
+      current = { type, rot: newRot, row: row + kr, col: col + kc };
       onPieceMove();
       return true;
     }
@@ -224,7 +251,7 @@ function rotate(dir) {
   return false;
 }
 
-// ── Movement ──────────────────────────────────────────────────────────────────
+// ── Movement ───────────────────────────────────────────────────────────────────
 
 function moveH(dir) {
   if (!current) return;
@@ -236,12 +263,12 @@ function moveH(dir) {
 }
 
 function softDrop() {
-  if (!current) return;
+  if (!current) return false;
   const { type, rot, row, col } = current;
   if (isValid(type, rot, row + 1, col)) {
     current.row++;
     dropAccum = 0;
-    score += 1; // soft drop bonus
+    score += 1;
     updateScoreDisplay();
     onPieceMove();
     return true;
@@ -253,7 +280,6 @@ function hardDrop() {
   if (!current) return;
   let dropped = 0;
   while (softDrop()) dropped++;
-  score += dropped; // already added 1 per row above; add the extra
   lockPiece();
 }
 
@@ -265,13 +291,11 @@ function ghostRow() {
   return r;
 }
 
-// ── Lock / clear ──────────────────────────────────────────────────────────────
+// ── Lock / clear ───────────────────────────────────────────────────────────────
 
 function onPieceMove() {
-  // reset lock delay when piece moves or rotates on the floor
   const { type, rot, row, col } = current;
   if (!isValid(type, rot, row + 1, col)) {
-    // on ground
     if (lockMoves < LOCK_MOVES_MAX) {
       lockTimer = performance.now() + LOCK_DELAY;
       lockMoves++;
@@ -284,10 +308,15 @@ function onPieceMove() {
 function lockPiece() {
   if (!current) return;
   const { type, rot, row, col } = current;
-  for (const [r, c] of cells(type, rot, row, col)) {
+  const lockedCells = cells(type, rot, row, col);
+
+  for (const [r, c] of lockedCells) {
     if (r < 0) { triggerGameOver(); return; }
     board[r][c] = PIECES[type].color;
   }
+
+  spawnSplash(lockedCells);
+
   current = null;
   lockTimer = null;
 
@@ -311,11 +340,9 @@ function clearLines() {
   }
   if (full.length === 0) return 0;
 
-  // Flash animation
   animatingLines = full;
   animFrame = 0;
 
-  // Remove rows after short delay (handled in render loop)
   setTimeout(() => {
     for (const r of [...full].reverse()) {
       board.splice(r, 1);
@@ -327,7 +354,7 @@ function clearLines() {
   return full.length;
 }
 
-// ── Hold ──────────────────────────────────────────────────────────────────────
+// ── Hold ───────────────────────────────────────────────────────────────────────
 
 function holdPiece() {
   if (!canHold || !current) return;
@@ -352,7 +379,7 @@ function spawnNext() {
   drawNext();
 }
 
-// ── Game flow ─────────────────────────────────────────────────────────────────
+// ── Game flow ──────────────────────────────────────────────────────────────────
 
 function initGame() {
   board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
@@ -360,17 +387,12 @@ function initGame() {
   next3 = [];
   held = null;
   canHold = true;
-  score = 0;
-  level = 1;
-  lines = 0;
-  gameOver = false;
-  paused = false;
-  animatingLines = [];
-  dropAccum = 0;
-  lockTimer = null;
-  lockMoves = 0;
+  score = 0; level = 1; lines = 0;
+  gameOver = false; paused = false;
+  animatingLines = []; dropAccum = 0;
+  lockTimer = null; lockMoves = 0;
   lastTime = null;
-
+  particles = [];
   updateScoreDisplay();
   refillNext3();
   spawnNext();
@@ -387,7 +409,7 @@ function triggerGameOver() {
   gameRunning = false;
   gameOver = true;
   cancelAnimationFrame(rafId);
-  document.getElementById('final-score').textContent = score;
+  document.getElementById('final-score').textContent = score.toLocaleString();
   document.getElementById('final-level').textContent = level;
   document.getElementById('final-lines').textContent = lines;
   document.getElementById('gameover-screen').classList.remove('hidden');
@@ -414,7 +436,7 @@ function togglePause() {
   }
 }
 
-// ── Game loop ─────────────────────────────────────────────────────────────────
+// ── Game loop ──────────────────────────────────────────────────────────────────
 
 function loop(ts) {
   if (!gameRunning || paused) return;
@@ -423,7 +445,6 @@ function loop(ts) {
   const dt = ts - lastTime;
   lastTime = ts;
 
-  // Gravity
   dropAccum += dt;
   const interval = dropInterval(level);
   if (dropAccum >= interval) {
@@ -439,16 +460,11 @@ function loop(ts) {
     }
   }
 
-  // Lock timer
-  if (current && lockTimer !== null && ts >= lockTimer) {
-    lockPiece();
-  }
+  if (current && lockTimer !== null && ts >= lockTimer) lockPiece();
 
-  // Animation frames for line clear
-  if (animatingLines.length > 0) {
-    animFrame = (animFrame + 1) % 6;
-  }
+  if (animatingLines.length > 0) animFrame = (animFrame + 1) % 6;
 
+  updateParticles(dt);
   drawBoard();
   drawHold();
   drawNext();
@@ -456,54 +472,71 @@ function loop(ts) {
   rafId = requestAnimationFrame(loop);
 }
 
-// ── Rendering ─────────────────────────────────────────────────────────────────
+// ── Rendering ──────────────────────────────────────────────────────────────────
 
-function drawCell(ctx, r, c, color, size, glow) {
-  const x = c * size, y = r * size;
-  const s = size;
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+  ctx.fill();
+}
 
-  // Background fill
+function drawCell(ctx, r, c, color, size, alpha) {
+  const x = c * size;
+  const y = r * size;
+  const pad = 2;
+  const inner = size - pad * 2;
+  const rad = inner * 0.28;
+
+  ctx.globalAlpha = alpha !== undefined ? alpha : 1;
+
+  // Main fill
   ctx.fillStyle = color;
-  ctx.fillRect(x + 1, y + 1, s - 2, s - 2);
+  roundRect(ctx, x + pad, y + pad, inner, inner, rad);
 
-  // Highlight (top-left)
-  ctx.fillStyle = 'rgba(255,255,255,0.25)';
-  ctx.fillRect(x + 1, y + 1, s - 2, 3);
-  ctx.fillRect(x + 1, y + 1, 3, s - 2);
+  // Bottom-right shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.12)';
+  roundRect(ctx, x + pad + inner * 0.45, y + pad + inner * 0.45, inner * 0.55, inner * 0.55, rad * 0.6);
 
-  // Shadow (bottom-right)
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
-  ctx.fillRect(x + 1, y + s - 4, s - 2, 3);
-  ctx.fillRect(x + s - 4, y + 1, 3, s - 2);
+  // Top-left highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.38)';
+  roundRect(ctx, x + pad, y + pad, inner * 0.55, inner * 0.48, rad);
 
-  // Glow
-  if (glow) {
-    ctx.save();
-    ctx.shadowColor = glow;
-    ctx.shadowBlur = 8;
-    ctx.fillStyle = color;
-    ctx.fillRect(x + 2, y + 2, s - 4, s - 4);
-    ctx.restore();
-  }
+  // Cute shine spot
+  ctx.fillStyle = 'rgba(255,255,255,0.72)';
+  ctx.beginPath();
+  ctx.ellipse(
+    x + pad + inner * 0.27,
+    y + pad + inner * 0.24,
+    inner * 0.13, inner * 0.085,
+    -0.4, 0, Math.PI * 2
+  );
+  ctx.fill();
+
+  ctx.globalAlpha = 1;
 }
 
 function drawBoard() {
-  bctx.clearRect(0, 0, boardCanvas.width, boardCanvas.height);
+  // Background
+  bctx.fillStyle = '#2d1b35';
+  bctx.fillRect(0, 0, boardCanvas.width, boardCanvas.height);
 
-  // Grid lines
-  bctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  // Subtle pink grid
+  bctx.strokeStyle = 'rgba(255, 182, 193, 0.07)';
   bctx.lineWidth = 1;
   for (let r = 0; r <= ROWS; r++) {
-    bctx.beginPath();
-    bctx.moveTo(0, r * CELL);
-    bctx.lineTo(COLS * CELL, r * CELL);
-    bctx.stroke();
+    bctx.beginPath(); bctx.moveTo(0, r * CELL); bctx.lineTo(COLS * CELL, r * CELL); bctx.stroke();
   }
   for (let c = 0; c <= COLS; c++) {
-    bctx.beginPath();
-    bctx.moveTo(c * CELL, 0);
-    bctx.lineTo(c * CELL, ROWS * CELL);
-    bctx.stroke();
+    bctx.beginPath(); bctx.moveTo(c * CELL, 0); bctx.lineTo(c * CELL, ROWS * CELL); bctx.stroke();
   }
 
   // Locked cells
@@ -511,37 +544,37 @@ function drawBoard() {
     const flashing = animatingLines.includes(r) && (animFrame % 2 === 0);
     for (let c = 0; c < COLS; c++) {
       if (board[r][c]) {
-        const color = flashing ? '#ffffff' : board[r][c];
-        drawCell(bctx, r, c, color, CELL, flashing ? null : board[r][c]);
+        drawCell(bctx, r, c, flashing ? '#ffffff' : board[r][c], CELL);
       }
     }
   }
 
-  if (!current) return;
+  if (!current) {
+    drawParticles();
+    return;
+  }
 
   // Ghost piece
   const gr = ghostRow();
   const { type, rot, row, col } = current;
-  const ghostColor = PIECES[type].color;
   if (gr !== row) {
-    bctx.globalAlpha = 0.2;
     for (const [dr, dc] of PIECES[type].shapes[rot]) {
-      const r = gr + dr, c = col + dc;
-      if (r >= 0) drawCell(bctx, r, c, ghostColor, CELL, null);
+      const rr = gr + dr, cc = col + dc;
+      if (rr >= 0) drawCell(bctx, rr, cc, PIECES[type].color, CELL, 0.18);
     }
-    bctx.globalAlpha = 1;
   }
 
   // Active piece
   for (const [dr, dc] of PIECES[type].shapes[rot]) {
-    const r = row + dr, c = col + dc;
-    if (r >= 0) drawCell(bctx, r, c, PIECES[type].color, CELL, PIECES[type].glow);
+    const rr = row + dr, cc = col + dc;
+    if (rr >= 0) drawCell(bctx, rr, cc, PIECES[type].color, CELL);
   }
+
+  drawParticles();
 }
 
 function drawPieceInPanel(ctx, type, canvasW, canvasH, cellSize) {
   if (!type) return;
-
   const shape = PIECES[type].shapes[0];
   let minR = 4, maxR = 0, minC = 4, maxC = 0;
   for (const [r, c] of shape) {
@@ -556,18 +589,20 @@ function drawPieceInPanel(ctx, type, canvasW, canvasH, cellSize) {
   ctx.save();
   ctx.translate(ox, oy);
   for (const [r, c] of shape) {
-    drawCell(ctx, r - minR, c - minC, PIECES[type].color, cellSize, PIECES[type].glow);
+    drawCell(ctx, r - minR, c - minC, PIECES[type].color, cellSize);
   }
   ctx.restore();
 }
 
 function drawHold() {
-  hctx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
+  hctx.fillStyle = '#2d1b35';
+  hctx.fillRect(0, 0, holdCanvas.width, holdCanvas.height);
   drawPieceInPanel(hctx, held, holdCanvas.width, holdCanvas.height, PREVIEW_CELL);
 }
 
 function drawNext() {
-  nctx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+  nctx.fillStyle = '#2d1b35';
+  nctx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
   const slotH = nextCanvas.height / 3;
   for (let i = 0; i < Math.min(3, next3.length); i++) {
     nctx.save();
@@ -577,7 +612,7 @@ function drawNext() {
   }
 }
 
-// ── Score display ─────────────────────────────────────────────────────────────
+// ── Score display ──────────────────────────────────────────────────────────────
 
 function updateScoreDisplay() {
   document.getElementById('score').textContent = score.toLocaleString();
@@ -585,9 +620,8 @@ function updateScoreDisplay() {
   document.getElementById('lines').textContent = lines;
 }
 
-// ── Input ─────────────────────────────────────────────────────────────────────
+// ── Input ──────────────────────────────────────────────────────────────────────
 
-// DAS (Delayed Auto Shift) state
 const DAS_DELAY = 170;
 const DAS_PERIOD = 50;
 const dasState = { ArrowLeft: null, ArrowRight: null };
@@ -615,60 +649,27 @@ function startDAS(key, dir) {
 
 document.addEventListener('keydown', (e) => {
   if (!gameRunning || gameOver) return;
-
   switch (e.code) {
-    case 'ArrowLeft':
-      e.preventDefault();
-      if (!dasState.ArrowLeft) startDAS('ArrowLeft', -1);
-      break;
-    case 'ArrowRight':
-      e.preventDefault();
-      if (!dasState.ArrowRight) startDAS('ArrowRight', 1);
-      break;
-    case 'ArrowDown':
-      e.preventDefault();
-      if (!paused) softDrop();
-      break;
-    case 'ArrowUp':
-      e.preventDefault();
-      if (!paused) rotate(1);
-      break;
-    case 'KeyZ':
-      e.preventDefault();
-      if (!paused) rotate(-1);
-      break;
-    case 'Space':
-      e.preventDefault();
-      if (!paused) hardDrop();
-      break;
-    case 'KeyC':
-    case 'ShiftLeft':
-    case 'ShiftRight':
-      e.preventDefault();
-      if (!paused) holdPiece();
-      break;
-    case 'KeyP':
-    case 'Escape':
-      e.preventDefault();
-      togglePause();
-      break;
+    case 'ArrowLeft':  e.preventDefault(); if (!dasState.ArrowLeft)  startDAS('ArrowLeft', -1); break;
+    case 'ArrowRight': e.preventDefault(); if (!dasState.ArrowRight) startDAS('ArrowRight', 1); break;
+    case 'ArrowDown':  e.preventDefault(); if (!paused) softDrop(); break;
+    case 'ArrowUp':    e.preventDefault(); if (!paused) rotate(1);  break;
+    case 'KeyZ':       e.preventDefault(); if (!paused) rotate(-1); break;
+    case 'Space':      e.preventDefault(); if (!paused) hardDrop(); break;
+    case 'KeyC': case 'ShiftLeft': case 'ShiftRight':
+      e.preventDefault(); if (!paused) holdPiece(); break;
+    case 'KeyP': case 'Escape':
+      e.preventDefault(); togglePause(); break;
   }
 });
 
 document.addEventListener('keyup', (e) => {
-  if (e.code === 'ArrowLeft') clearDAS('ArrowLeft');
+  if (e.code === 'ArrowLeft')  clearDAS('ArrowLeft');
   if (e.code === 'ArrowRight') clearDAS('ArrowRight');
 });
 
-// ── Button bindings ───────────────────────────────────────────────────────────
+// ── Button bindings ────────────────────────────────────────────────────────────
 
 document.getElementById('start-btn').addEventListener('click', startGame);
 document.getElementById('restart-btn').addEventListener('click', restartGame);
 document.getElementById('resume-btn').addEventListener('click', togglePause);
-
-// ── Initial draw ──────────────────────────────────────────────────────────────
-
-// Clear canvases on load
-bctx.clearRect(0, 0, boardCanvas.width, boardCanvas.height);
-hctx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
-nctx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
