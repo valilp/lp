@@ -1,0 +1,249 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0a0a0f;
+  --panel-bg: #12121a;
+  --panel-border: #2a2a3a;
+  --text: #e0e0f0;
+  --text-dim: #6060a0;
+  --accent: #7c4dff;
+  --btn-bg: #7c4dff;
+  --btn-hover: #9c6dff;
+  --cell-size: 30px;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ── Overlay screens ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+
+.overlay.hidden {
+  display: none;
+}
+
+.overlay-content {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 40px 50px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 300px;
+  box-shadow: 0 0 60px rgba(124, 77, 255, 0.15);
+}
+
+.game-title {
+  font-size: 3.5rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  background: linear-gradient(135deg, #7c4dff, #00e5ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gameover-title, .pause-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #ff4d4d;
+}
+
+.pause-title {
+  color: #ffd600;
+}
+
+.controls-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85rem;
+}
+
+.key {
+  background: #1e1e2e;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #a0a0d0;
+  min-width: 80px;
+  text-align: center;
+}
+
+.final-score {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.final-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.1rem;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.final-stat .label {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.final-stat span:last-child {
+  font-weight: 700;
+  font-size: 1.3rem;
+  color: #fff;
+}
+
+.btn {
+  background: var(--btn-bg);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 32px;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+  box-shadow: 0 0 20px rgba(124, 77, 255, 0.3);
+}
+
+.btn:hover {
+  background: var(--btn-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 30px rgba(124, 77, 255, 0.5);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+/* ── Game layout ── */
+#game-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+/* ── Side panels ── */
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 140px;
+}
+
+.panel-box {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.05em;
+}
+
+#hold-canvas, #next-canvas {
+  display: block;
+}
+
+/* ── Board ── */
+#board-wrapper {
+  position: relative;
+  line-height: 0;
+}
+
+#board-canvas {
+  display: block;
+  border: 2px solid var(--panel-border);
+  border-radius: 4px;
+  box-shadow: 0 0 40px rgba(124, 77, 255, 0.1);
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  :root { --cell-size: 22px; }
+
+  #game-layout {
+    gap: 8px;
+  }
+
+  .side-panel {
+    width: 80px;
+  }
+
+  .panel-box {
+    padding: 8px;
+  }
+
+  .stat-value {
+    font-size: 1.2rem;
+  }
+
+  .panel-label {
+    font-size: 0.55rem;
+  }
+
+  #hold-canvas, #next-canvas {
+    width: 80px !important;
+    height: 80px !important;
+  }
+}
