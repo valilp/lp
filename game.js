@@ -7,10 +7,10 @@ const ROWS = 20;
 const CELL = 30;
 const PREVIEW_CELL = 24;
 
-// Pastel kawaii piece colors
+// Lollipop candy colors
 const PIECES = {
   I: {
-    color: '#a8d8ea', dark: '#7bbcce',
+    color: '#ff3d7f', dark: '#cc1a5e',
     shapes: [
       [[0,0],[0,1],[0,2],[0,3]],
       [[0,2],[1,2],[2,2],[3,2]],
@@ -20,7 +20,7 @@ const PIECES = {
     spawnOffset: [-1, 3],
   },
   O: {
-    color: '#ffd6e0', dark: '#f0afc0',
+    color: '#ffe000', dark: '#ccb200',
     shapes: [
       [[0,0],[0,1],[1,0],[1,1]],
       [[0,0],[0,1],[1,0],[1,1]],
@@ -30,7 +30,7 @@ const PIECES = {
     spawnOffset: [0, 4],
   },
   T: {
-    color: '#d4b8e0', dark: '#b090c8',
+    color: '#aa44ff', dark: '#7722cc',
     shapes: [
       [[0,1],[1,0],[1,1],[1,2]],
       [[0,1],[1,1],[1,2],[2,1]],
@@ -40,7 +40,7 @@ const PIECES = {
     spawnOffset: [0, 3],
   },
   S: {
-    color: '#b8e0d2', dark: '#88c4b0',
+    color: '#00dd88', dark: '#00aa66',
     shapes: [
       [[0,1],[0,2],[1,0],[1,1]],
       [[0,1],[1,1],[1,2],[2,2]],
@@ -50,7 +50,7 @@ const PIECES = {
     spawnOffset: [0, 3],
   },
   Z: {
-    color: '#ffb3c6', dark: '#e08090',
+    color: '#ff6600', dark: '#cc4400',
     shapes: [
       [[0,0],[0,1],[1,1],[1,2]],
       [[0,2],[1,1],[1,2],[2,1]],
@@ -60,7 +60,7 @@ const PIECES = {
     spawnOffset: [0, 3],
   },
   J: {
-    color: '#b8ccf0', dark: '#88a4d8',
+    color: '#0099ff', dark: '#0066cc',
     shapes: [
       [[0,0],[1,0],[1,1],[1,2]],
       [[0,1],[0,2],[1,1],[2,1]],
@@ -70,7 +70,7 @@ const PIECES = {
     spawnOffset: [0, 3],
   },
   L: {
-    color: '#ffd4a8', dark: '#e0ae78',
+    color: '#ff9900', dark: '#cc6600',
     shapes: [
       [[0,2],[1,0],[1,1],[1,2]],
       [[0,1],[1,1],[2,1],[2,2]],
@@ -494,7 +494,7 @@ function drawCell(ctx, r, c, color, size, alpha) {
   const y = r * size;
   const pad = 2;
   const inner = size - pad * 2;
-  const rad = inner * 0.28;
+  const rad = inner * 0.3;
 
   ctx.globalAlpha = alpha !== undefined ? alpha : 1;
 
@@ -502,22 +502,25 @@ function drawCell(ctx, r, c, color, size, alpha) {
   ctx.fillStyle = color;
   roundRect(ctx, x + pad, y + pad, inner, inner, rad);
 
-  // Bottom-right shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.12)';
-  roundRect(ctx, x + pad + inner * 0.45, y + pad + inner * 0.45, inner * 0.55, inner * 0.55, rad * 0.6);
+  // Bottom shadow to give depth
+  ctx.fillStyle = 'rgba(0,0,0,0.14)';
+  roundRect(ctx, x + pad, y + pad + inner * 0.55, inner, inner * 0.45, rad * 0.5);
 
-  // Top-left highlight
-  ctx.fillStyle = 'rgba(255,255,255,0.38)';
-  roundRect(ctx, x + pad, y + pad, inner * 0.55, inner * 0.48, rad);
+  // Big glassy top highlight (candy shine)
+  const grad = ctx.createLinearGradient(x + pad, y + pad, x + pad, y + pad + inner * 0.58);
+  grad.addColorStop(0, 'rgba(255,255,255,0.6)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = grad;
+  roundRect(ctx, x + pad, y + pad, inner, inner * 0.58, rad);
 
-  // Cute shine spot
-  ctx.fillStyle = 'rgba(255,255,255,0.72)';
+  // Small bright shine spot
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
   ctx.beginPath();
   ctx.ellipse(
-    x + pad + inner * 0.27,
-    y + pad + inner * 0.24,
-    inner * 0.13, inner * 0.085,
-    -0.4, 0, Math.PI * 2
+    x + pad + inner * 0.3,
+    y + pad + inner * 0.2,
+    inner * 0.18, inner * 0.1,
+    -0.3, 0, Math.PI * 2
   );
   ctx.fill();
 
@@ -525,12 +528,12 @@ function drawCell(ctx, r, c, color, size, alpha) {
 }
 
 function drawBoard() {
-  // Background
-  bctx.fillStyle = '#2d1b35';
+  // White candy board background
+  bctx.fillStyle = '#fff8fb';
   bctx.fillRect(0, 0, boardCanvas.width, boardCanvas.height);
 
-  // Subtle pink grid
-  bctx.strokeStyle = 'rgba(255, 182, 193, 0.07)';
+  // Soft pink grid
+  bctx.strokeStyle = 'rgba(255, 107, 174, 0.1)';
   bctx.lineWidth = 1;
   for (let r = 0; r <= ROWS; r++) {
     bctx.beginPath(); bctx.moveTo(0, r * CELL); bctx.lineTo(COLS * CELL, r * CELL); bctx.stroke();
@@ -595,13 +598,13 @@ function drawPieceInPanel(ctx, type, canvasW, canvasH, cellSize) {
 }
 
 function drawHold() {
-  hctx.fillStyle = '#2d1b35';
+  hctx.fillStyle = '#fff8fb';
   hctx.fillRect(0, 0, holdCanvas.width, holdCanvas.height);
   drawPieceInPanel(hctx, held, holdCanvas.width, holdCanvas.height, PREVIEW_CELL);
 }
 
 function drawNext() {
-  nctx.fillStyle = '#2d1b35';
+  nctx.fillStyle = '#fff8fb';
   nctx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
   const slotH = nextCanvas.height / 3;
   for (let i = 0; i < Math.min(3, next3.length); i++) {
